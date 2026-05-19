@@ -57,12 +57,31 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
+## 🚀 Fitur Utama & Alur Proses
+
+### 1. Manajemen Produk (`GET /api/products`)
+* **Proses:** Mengambil data seluruh produk dari database yang berstatus aktif (`is_active = 1`). 
+* **Optimasi:** Data dikembalikan dalam bentuk format terstruktur menggunakan API Resource untuk memastikan konsistensi response JSON.
+
 ![alt text](<Screenshot 2026-05-19 at 12.34.59.png>)
 
+### 2. Transaksi Order (`POST /api/orders`)
+* **Proses:** Endpoint ini menerima input `product_id` dan `qty` dari client lewat request body JSON.
+* **Validasi Relasi:** Laravel secara ketat melakukan pengecekan data ke tabel `users` dan `products` menggunakan mekanisme *Foreign Key Constraint*. Transaksi akan otomatis gagal disimpan jika `user_id` atau `product_id` tidak terdaftar di database untuk menjaga integritas data.
+
 ![alt text](<Screenshot 2026-05-19 at 12.33.53.png>)
+
+### 3. Dashboard Analytics & Caching (`GET /api/dashboard/summary`) — *Expert*
+* **Proses Agregasi:** Sistem menghitung total pendapatan (*revenue*) dari order berkategori 'completed', menghitung total order hari ini, serta mendeteksi jumlah produk yang stoknya menipis (di bawah 5 pcs).
+* **Eager Loading (Anti N+1):** Menampilkan Top 5 produk terlaris dan 10 transaksi terbaru dengan teknik `.with(['product.category'])` untuk meminimalkan beban query ke database.
+* **Mekanisme Caching (300 Detik):** Seluruh hasil query dashboard dibungkus di dalam fungsi `Cache::remember` dengan durasi kedaluwarsa 300 detik (5 menit). Sistem mengembalikan indikator status `"from_cache": true` jika data ditarik dari memori cache, dan `"from_cache": false` jika data baru diambil ulang dari database.
+* **Flush Cache Manual (`DELETE /api/dashboard/cache`):** Menyediakan fungsi untuk menghapus (clear) data cache dashboard secara paksa sewaktu-waktu.
 
 ![alt text](<Screenshot 2026-05-19 at 12.33.58.png>)
 
 ![alt text](<Screenshot 2026-05-19 at 12.34.14.png>)
+
+### 4. Fitur Bonus: Scoped Binding (`GET /api/users/{user}/orders/{order}`)
+* **Proses:** Mengamankan rute data spesifik transaksi dengan memastikan secara otomatis di level routing bahwa data `order` yang diminta benar-benar milik `user` yang bersangkutan. Jika tidak cocok, Laravel secara instan melempar response `404 Not Found`.
 
 ![alt text](<Screenshot 2026-05-19 at 12.34.21.png>)
